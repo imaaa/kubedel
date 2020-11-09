@@ -38,7 +38,7 @@ _findcontext(){
     fi
 }
 
-_kubetail()
+_kubedel()
 {
     local curr_arg;
     curr_arg=${COMP_WORDS[COMP_CWORD]}
@@ -57,4 +57,4 @@ _kubetail()
     esac
 }
 
-complete -F _kubetail kubetail kt
+complete -F _kubedel kubedel kt
