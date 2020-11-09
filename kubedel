@@ -355,12 +355,4 @@ fi
 # Join all del commands into one string separated by " & "
 join command_to_tail " & " "${del_commands[@]}"
 
-# Aggregate all deletes and print to stdout
-# Note that tail +1f doesn't work on some Linux distributions so we use this slightly longer alternative
-# Note that if --follow=false, then the tail command should also not be followed
-tail_follow_command="-f"
-if [[ ${follow} == false ]];
-then
-	tail_follow_command=""
-fi
-tail ${tail_follow_command} -n +1 <( eval "${command_to_tail}" ) $line_buffered
+eval "${command_to_tail}"
