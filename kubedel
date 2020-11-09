@@ -30,7 +30,6 @@ default_colored_output="${KUBEDEL_COLORED_OUTPUT:-line}"
 default_timestamps="${KUBEDEL_TIMESTAMPS:-}"
 default_jq_selector="${KUBEDEL_JQ_SELECTOR:-}"
 default_skip_colors="${KUBEDEL_SKIP_COLORS:-7,8}"
-default_tail="${KUBEDEL_TAIL:--1}"
 default_show_color_index="${KUBEDEL_SHOW_COLOR_INDEX:-false}"
 
 namespace="${default_namespace}"
@@ -40,7 +39,6 @@ colored_output="${default_colored_output}"
 timestamps="${default_timestamps}"
 jq_selector="${default_jq_selector}"
 skip_colors="${default_skip_colors}"
-tail="${default_tail}"
 show_color_index="${default_show_color_index}"
 
 if [[ ${1} != -* ]]
@@ -57,11 +55,11 @@ dryrun=false
 cluster=""
 namespace_arg="-n ${default_namespace}"
 
-usage="${PROGNAME} <search term> [-h] [-c] [-n] [-t] [-l] [-d] [-p] [-s] [-b] [-k] [-v] [-r] [-i] -- tail multiple Kubernetes pod deletes at the same time
+usage="${PROGNAME} <search term> [-h] [-c] [-n] [-t] [-l] [-d] [-p] [-s] [-b] [-k] [-v] [-r] [-i] multiple Kubernetes pod deletes at the same time
 
 where:
     -h, --help              Show this help text
-    -c, --container         The name of the container to tail in the pod (if multiple containers are defined in the pod).
+    -c, --container         The name of the container in the pod (if multiple containers are defined in the pod).
                             Defaults to all containers in the pod. Can be used multiple times.
     -t, --context           The k8s context. ex. int1-context. Relies on ~/.kube/config for the contexts.
     -l, --selector          Label selector. If used the pod name is ignored.
@@ -81,7 +79,6 @@ where:
                             If you have green foreground on black, this will skip dark grey and some greens -z 2,8,10
                             Defaults to: ${default_skip_colors}
         --timestamps        Show timestamps for each del line
-        --tail              Lines of recent del file to display. Defaults to ${default_tail}, showing all del lines.
     -v, --version           Prints the kubedel version
     -r, --cluster           The name of the kubeconfig cluster to use.
     -i, --show-color-index  Show the color index before the pod name prefix that is shown before each del line. 
@@ -96,9 +93,7 @@ examples:
     ${PROGNAME} my-pod-v1 -t int1-context -c my-container
     ${PROGNAME} '(service|consumer|thing)' -e regex
     ${PROGNAME} -l service=my-service
-    ${PROGNAME} --selector service=my-service --since 10m
-    ${PROGNAME} --tail 1"
-
+    ${PROGNAME} --selector service=my-service --since 10m"
 if [ "$#" -ne 0 ]; then
 	while [ "$#" -gt 0 ]
 	do
@@ -186,13 +181,6 @@ if [ "$#" -ne 0 ]; then
 			    timestamps="$1"
 			fi
 			;;
-		--tail)
-			if [ -z "$2" ]; then
-			    tail="${default_tail}"
-			else
-			    tail="$2"
-			fi
-			;;
 		-i|--show-color-index)
 			if [ -z "$2" ]; then
 			    show_color_index="${default_show_color_index}"
@@ -272,7 +260,7 @@ function next_col {
 	[[ $skip_colors =~ (^|,)$potential_col($|,) ]] && echo `next_col $potential_col` || echo $potential_col
 }
 
-# Allows for more colors, this is useful if one tails a lot pods
+# Allows for more colors, this is useful if one deletes a lot pods
 if [ ${colored_output} != "false" ]; then
 	export TERM=xterm-256color
 fi
