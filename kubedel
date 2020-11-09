@@ -57,7 +57,7 @@ dryrun=false
 cluster=""
 namespace_arg="-n ${default_namespace}"
 
-usage="${PROGNAME} <search term> [-h] [-c] [-n] [-t] [-l] [-d] [-p] [-s] [-b] [-k] [-v] [-r] [-i] -- tail multiple Kubernetes pod logs at the same time
+usage="${PROGNAME} <search term> [-h] [-c] [-n] [-t] [-l] [-d] [-p] [-s] [-b] [-k] [-v] [-r] [-i] -- tail multiple Kubernetes pod deletes at the same time
 
 where:
     -h, --help              Show this help text
@@ -66,10 +66,10 @@ where:
     -t, --context           The k8s context. ex. int1-context. Relies on ~/.kube/config for the contexts.
     -l, --selector          Label selector. If used the pod name is ignored.
     -n, --namespace         The Kubernetes namespace where the pods are located (defaults to \"${default_namespace}\")
-    -f, --follow            Specify if the logs should be streamed. (true|false) Defaults to ${default_follow}.
+    -f, --follow            Specify if the deletes should be streamed. (true|false) Defaults to ${default_follow}.
     -d, --dry-run           Print the names of the matched pods and containers, then exit.
-    -p, --previous          Return logs for the previous instances of the pods, if available. (true|false) Defaults to ${default_previous}.
-    -s, --since             Only return logs newer than a relative duration like 5s, 2m, or 3h. Defaults to ${default_since}.
+    -p, --previous          Return deletes for the previous instances of the pods, if available. (true|false) Defaults to ${default_previous}.
+    -s, --since             Only return deletes newer than a relative duration like 5s, 2m, or 3h. Defaults to ${default_since}.
     -b, --line-buffered     This flags indicates to use line-buffered. Defaults to false.
     -e, --regex             The type of name matching to use (regex|substring)
     -j, --jq                If your output is json - use this jq-selector to parse it.
@@ -80,11 +80,11 @@ where:
     -z, --skip-colors       Comma-separated list of colors to not use in output
                             If you have green foreground on black, this will skip dark grey and some greens -z 2,8,10
                             Defaults to: ${default_skip_colors}
-        --timestamps        Show timestamps for each log line
-        --tail              Lines of recent log file to display. Defaults to ${default_tail}, showing all log lines.
+        --timestamps        Show timestamps for each del line
+        --tail              Lines of recent del file to display. Defaults to ${default_tail}, showing all del lines.
     -v, --version           Prints the kubedel version
     -r, --cluster           The name of the kubeconfig cluster to use.
-    -i, --show-color-index  Show the color index before the pod name prefix that is shown before each log line. 
+    -i, --show-color-index  Show the color index before the pod name prefix that is shown before each del line. 
     						Normally only the pod name is added as a prefix before each line, for example \"[app-5b7ff6cbcd-bjv8n]\", 
     						but if \"show-color-index\" is true then color index is added as well: \"[1:app-5b7ff6cbcd-bjv8n]\".
                             This is useful if you have color blindness or if you want to know which colors to exclude (see \"--skip-colors\").
@@ -261,7 +261,7 @@ fi
 
 color_end=$(tput sgr0)
 
-# Wrap all pod names in the "kubectl logs <name> -f=true/false" command
+# Wrap all pod names in the "kubectl deletes <name> -f=true/false" command
 display_names_preview=()
 pod_logs_commands=()
 i=0
@@ -329,12 +329,11 @@ for pod in ${matching_pods[@]}; do
 			colored_line="${color_start}[${color_end}${color_index_prefix}${color_start}${display_name}] \$REPLY ${color_end}"
 		fi
 
-		kubectl_cmd="${KUBECTL_BIN} ${context:+--context=${context}} delete po ${pod} ${container} -f=${follow} --previous=${previous} --since=${since} --tail=${tail} ${namespace_arg} ${cluster}"
-		colorify_lines_cmd="while read -r; do echo \"$colored_line\" | tail -n +1; done"
+		kubectl_cmd="${KUBECTL_BIN} ${context:+--context=${context}} delete po ${pod}  ${namespace_arg} ${cluster}"
 		if [ "z" == "z$jq_selector" ]; then
-			logs_commands+=("${kubectl_cmd} ${timestamps} | ${colorify_lines_cmd}");
+			del_commands+=("${kubectl_cmd}");
 		else
-			logs_commands+=("${kubectl_cmd} | jq --unbuffered -r -R --stream '. as \$line | try (fromjson | $jq_selector) catch \$line' | ${colorify_lines_cmd}");
+			del_commands+=("${kubectl_cmd} | jq --unbuffered -r -R --stream '. as \$line | try (fromjson | $jq_selector) catch \$line'");
 		fi
 
 		# There are only 11 usable colors
@@ -343,7 +342,7 @@ for pod in ${matching_pods[@]}; do
 done
 
 # Preview pod colors
-echo "Will tail ${#display_names_preview[@]} logs..."
+echo "Will delete ${#display_names_preview[@]} pod(s)..."
 for preview in "${display_names_preview[@]}"; do
 	echo "$preview"
 done
@@ -353,10 +352,10 @@ then
   exit 0
 fi
 
-# Join all log commands into one string separated by " & "
-join command_to_tail " & " "${logs_commands[@]}"
+# Join all del commands into one string separated by " & "
+join command_to_tail " & " "${del_commands[@]}"
 
-# Aggregate all logs and print to stdout
+# Aggregate all deletes and print to stdout
 # Note that tail +1f doesn't work on some Linux distributions so we use this slightly longer alternative
 # Note that if --follow=false, then the tail command should also not be followed
 tail_follow_command="-f"
