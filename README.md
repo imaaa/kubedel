@@ -4,6 +4,11 @@ Bash script that enables you to delete multiple pods by label using one command.
 This script is inspired by well known script kubedel and using the same techniques.
 This is the same as running "kubectl delete po -l app=<pod label>" but for multiple pods.
 
+
+## Installation
+Just download the [kubedel](https://raw.githubusercontent.com/imaaa/kubedel/master/kubedel) file (or any of the [releases](https://github.com/imaaa/kubedel/releases)) and you're good to go.
+
+
 ## Usage
 
 First find the names of all your pods:
